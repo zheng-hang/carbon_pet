@@ -19,3 +19,81 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+#dialogbox {
+  cursor: default;
+  font-size: 13px;
+  font-family: Monospace, sans-serif;
+  border-radius: 2px;
+  padding: 8px;
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  min-height: 70px; /* Ensures text has enough space */
+  line-height: 16px;
+  background: white;
+  border: 2px solid black;
+  color: black;
+  text-shadow: none;
+  box-shadow: 0 2px 0 2px black, inset 0 2px 0 2px black;
+  user-select: none;
+  
+  /* ✅ Align text to the top */
+  display: flex;
+  align-items: flex-start;  /* Aligns text to the top */
+  justify-content: flex-start;
+  padding-top: 10px;  /* Adds a bit of spacing from the top */
+  min-height: 80px;  /* Makes sure text stays properly aligned */
+}
+#arrow {
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top-color: black;
+  position: absolute;
+  right: 10px;
+  bottom: 5px; /* ✅ Arrow is now inside */
+  animation: bounce 0.15s ease-in-out infinite alternate;
+}
+
+@keyframes bounce {
+  from { margin-bottom: 2px; }
+  to { margin-bottom: 5px; }
+}
+
+.health-container {
+  position: absolute;
+  top: calc(50% + 70px); /* ✅ Positions below the sprite */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 10px;
+  background-color: #ddd;
+  border: 2px solid black;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.health-bar {
+  height: 100%;
+  width: 100%; /* Default full health */
+  background-color: green; /* ✅ Changes dynamically */
+  transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+}
+
+#datetime-container {
+  position: absolute;  /* ✅ Make it relative to the background */
+  top: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+  color: white;
+  font-family: Monospace, sans-serif;
+  font-size: 14px;
+  border-radius: 5px;
+  border: 1px solid white;
+  user-select: none;
+  z-index: 10; /* ✅ Ensure it's above other elements */
+}
