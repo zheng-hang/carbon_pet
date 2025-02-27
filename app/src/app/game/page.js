@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { La_Belle_Aurore } from "next/font/google";
 
 export default function GamePage() {
   const searchParams = useSearchParams();
@@ -11,6 +12,8 @@ export default function GamePage() {
   const starter = searchParams.get("starter") || "charmander";
   const [selectedImage, setSelectedImage] = useState("/backgrounds/day-bg.jpg");
   const [surveyData, setSurveyData] = useState(null);
+  const [currentAction, setCurrentAction] = useState(null); // ✅ Track current action (user input)
+  const [userValue, setUserValue] = useState(""); // ✅ User's input value
   const [progress, setProgress] = useState(0); // ✅ Progress starts at 0%
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogText, setDialogText] = useState("");
@@ -23,6 +26,8 @@ export default function GamePage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showPanel, setShowPanel] = useState(false); // ✅ Track secret panel visibility
   const [clickCount, setClickCount] = useState(0); // ✅ Track clicks for secret button
+  const [evolutionStage, setEvolutionStage] = useState(0); // ✅ Track evolution stage
+
 
   const spriteImage = `/sprites/${starter}.gif`;
   const explosionGif = "/sprites/explosion.gif";
@@ -33,6 +38,41 @@ export default function GamePage() {
     "Your choices will affect your pet's happiness and health!",
     "Let's begin the adventure!"
   ];
+
+  // ✅ Calculate XP and check evolution
+  const handleSubmit = () => {
+    const baseline = getBaselineValue(currentAction);
+    const userInput = parseFloat(userValue);
+
+    if (isNaN(userInput)) return;
+
+    let gainedXP = 0;
+    const temp = parseFloat(getBaselineValue(currentAction).toString().replace(/[^\d.]/g, "")) || 0;
+    if (currentAction === "spending") {
+      const savings = Math.max(0, temp - userInput);
+      gainedXP = Math.floor(savings / 5); // $5 saved = 1 XP
+    } else if (currentAction === "rides") {
+      const ridesSaved = Math.max(0, temp - userInput);
+      gainedXP = ridesSaved * 5; // 1 ride saved = 5 XP
+    } else if (currentAction === "energy") {
+      const energySaved = Math.max(0, temp - userInput);
+      gainedXP = Math.floor(energySaved / 10); // 10 kWh saved = 1 XP
+    }
+
+    let newXP = progress + gainedXP;
+    // console.log(gainedXP, newXP, baseline, userInput);
+    // ✅ Check for evolution
+    if (newXP >= 100) {
+      newXP = 0; // Reset XP
+      setEvolutionStage((prevStage) => Math.min(prevStage + 1, 2)); // Evolve but cap at stage 2
+    }
+
+    setProgress(newXP);
+    setUserValue("");
+    setCurrentAction(null);
+  };
+
+
 
   const getHealthColor = () => (health > 50 ? "green" : health > 20 ? "yellow" : "red");
 
@@ -92,6 +132,21 @@ export default function GamePage() {
       router.push("/begin");
     }
   }, [router]);
+
+  // ✅ Get baseline values from survey results
+  const getBaselineValue = (category) => {
+    if (!surveyData) return "N/A";
+    switch (category) {
+      case "spending":
+        return `$${parseInt(surveyData.monthlySpending) || 0}`;
+      case "rides":
+        return `${parseInt(surveyData.rideHailingUsage) || 0} rides/week`;
+      case "energy":
+        return `${parseInt(surveyData.energyConsumption) || 0} kWh`;
+      default:
+        return "N/A";
+    }
+  };
 
   useEffect(() => {
     if (dialogVisible && surveyData) {
@@ -162,6 +217,16 @@ export default function GamePage() {
         {/* ✅ Background Image */}
         <Image src={selectedImage} alt="Background" layout="fill" objectFit="cover" />
 
+        {/* ✅ Pokémon Evolution (Image Changes) */}
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+        <Image
+          src={`/sprites/${starter}${evolutionStage > 0 ? `_${evolutionStage}` : ""}.gif`}
+          alt={starter}
+          width={100 * Math.pow(1.5, evolutionStage)} // ✅ Scale up by 30% per evolution
+          height={100 * Math.pow(1.5, evolutionStage)} // ✅ Maintain proportional size
+        />
+        </div>
+
         {/* ✅ Styled Progress Bar (Top-Right Corner) */}
         <div 
           className="progress-bar-container"
@@ -202,6 +267,51 @@ export default function GamePage() {
         </div>
 
 
+               {/* ✅ Main Menu */}
+               {currentAction === null ? (
+          <div style={{
+            position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)",
+            width: "85%", height: "180px", background: "#eee", border: "3px solid black", borderRadius: "8px",
+            display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px", padding: "5px",
+            alignItems: "center"
+          }}>
+            <div style={{ color: "black", fontSize: "18px", fontWeight: "bold", textAlign: "center", gridColumn: "span 2", marginBottom: "5px" }}>
+              What will {surveyData?.name || "Trainer"} do?
+            </div>
+            <button onClick={() => setCurrentAction("spending")} style={{ width: "100%", background: "#ff6961", color: "white", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Spending</button>
+            <button onClick={() => setCurrentAction("rides")} style={{ width: "100%", background: "#ffcc5c", color: "black", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Rides</button>
+            <button onClick={() => setCurrentAction("energy")} style={{ width: "100%", background: "#77dd77", color: "black", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Energy</button>
+
+            {/* ✅ UPDATED: Redirect to /resources */}
+            <button onClick={() => router.push("/resources")} style={{ width: "100%", background: "#5c85ff", color: "white", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>
+              Resources
+            </button>
+          </div>
+        ) : (
+          /* ✅ User Input Screen */
+          <div style={{
+            position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)",
+            width: "85%", height: "160px", background: "#eee", border: "3px solid black", borderRadius: "8px",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "15px"
+          }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "10px", color: "black" }}>
+              {currentAction === "spending" ? "Enter Monthly Spending ($)" :
+              currentAction === "rides" ? "Enter Ride-Hailing Trips per Week" :
+              "Enter Energy Usage (kWh)"}
+            </h3>
+            {/* ✅ Display Baseline Value from Survey */}
+            <div style={{ fontSize: "14px", fontWeight: "bold", color: "gray", marginBottom: "5px" }}>
+              Baseline: {getBaselineValue(currentAction)}
+            </div>
+            <input type="number" placeholder="Enter value here" value={userValue} onChange={(e) => setUserValue(e.target.value)} style={{ color: "black", padding: "5px", border: "3px solid black", borderRadius: "8px", width: "85%", textAlign: "center", fontSize: "16px" }} />
+            <button onClick={handleSubmit} style={{ marginTop: "10px", padding: "8px 15px", background: "#ff6961", color: "white", fontWeight: "bold", border: "3px solid black", borderRadius: "8px" }}>
+              Confirm
+            </button>
+          </div>
+        )}
+
+
+
           {/* ✅ Hidden Click Button (Now Positioned at Bottom Left of the Background Image) */}
           <button 
             onClick={handleSecretClick} 
@@ -217,8 +327,6 @@ export default function GamePage() {
             }}
         ></button>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
-          <Image src={spriteImage} alt={starter} width={100} height={100} />
-          
           {showExplosion && (
             <Image src={explosionGif} alt="Explosion Effect" width={100} height={100} style={{ position: "absolute", top: 0, left: 0, animation: "shake 0.3s ease-in-out infinite" }} />
           )}
@@ -228,9 +336,9 @@ export default function GamePage() {
           )}
         </div>
 
-        <div className="health-container">
+        {/* <div className="health-container">
           <div className="health-bar" style={{ width: `${health}%`, backgroundColor: getHealthColor() }}></div>
-        </div>
+        </div> */}
 
         {dialogVisible && (
           <div id="dialogbox" onClick={handleNextDialog}>
