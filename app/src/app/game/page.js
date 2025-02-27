@@ -28,7 +28,6 @@ export default function GamePage() {
   const [clickCount, setClickCount] = useState(0); // ✅ Track clicks for secret button
   const [evolutionStage, setEvolutionStage] = useState(0); // ✅ Track evolution stage
 
-
   const spriteImage = `/sprites/${starter}.gif`;
   const explosionGif = "/sprites/explosion.gif";
   const healingGif = "/sprites/healing.webp";
@@ -278,12 +277,12 @@ export default function GamePage() {
             <div style={{ color: "black", fontSize: "18px", fontWeight: "bold", textAlign: "center", gridColumn: "span 2", marginBottom: "5px" }}>
               What will {surveyData?.name || "Trainer"} do?
             </div>
-            <button onClick={() => setCurrentAction("spending")} style={{ width: "100%", background: "#ff6961", color: "white", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Spending</button>
+            <button onClick={() => setCurrentAction("spending")} style={{ width: "100%", background: "salmon", color: "black", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Spending</button>
             <button onClick={() => setCurrentAction("rides")} style={{ width: "100%", background: "#ffcc5c", color: "black", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Rides</button>
             <button onClick={() => setCurrentAction("energy")} style={{ width: "100%", background: "#77dd77", color: "black", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>Record Energy</button>
 
             {/* ✅ UPDATED: Redirect to /resources */}
-            <button onClick={() => router.push("/resources")} style={{ width: "100%", background: "#5c85ff", color: "white", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>
+            <button onClick={() => router.push("/resources")} style={{ width: "100%", background: "#5c85ff", color: "black", fontWeight: "bold", fontSize: "16px", border: "3px solid black", borderRadius: "8px", padding: "12px" }}>
               Resources
             </button>
           </div>
@@ -321,7 +320,7 @@ export default function GamePage() {
             left: "10px",   // ✅ Aligned to the left of the background
             width: "30px",
             height: "30px",
-            background: "white",
+            background: "transparent",
             border: "none",
             cursor: "pointer"
             }}
