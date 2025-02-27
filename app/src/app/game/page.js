@@ -1,124 +1,115 @@
-"use client"; // Required for hooks in Next.js App Router
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function GamePage() {
-  const [selectedImage, setSelectedImage] = useState("/backgrounds/day-bg.jpg"); // Default background
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const starter = searchParams.get("starter") || "charmander"; // default fallback
+  const [surveyData, setSurveyData] = useState(null);
+  const [selectedImage, setSelectedImage] = useState("/backgrounds/day-bg.jpg");
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogText, setDialogText] = useState("");
   const [currentDialogIndex, setCurrentDialogIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [health, setHealth] = useState(100); // ✅ Default full health (100%)
-  const [showExplosion, setShowExplosion] = useState(false); // ✅ Track explosion visibility
-  const [showHealing, setShowHealing] = useState(false); // ✅ Track healing visibility
-  const [typingTimeouts, setTypingTimeouts] = useState([]); // Track timeouts
-  const [currentTime, setCurrentTime] = useState(new Date()); // ✅ Track current time
+  const [health, setHealth] = useState(100);
+  const [showExplosion, setShowExplosion] = useState(false);
+  const [showHealing, setShowHealing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [typingTimeouts, setTypingTimeouts] = useState([]);
 
-  // Pokémon Sprite
-  const spriteImage = "/sprites/charmander.gif";
-  const explosionGif = "/sprites/explosion.gif"; // ✅ Explosion effect
-  const healingGif = "/sprites/healing.webp"; // ✅ Healing effect
+  const spriteImage = `/sprites/${starter}.gif`;
+  const explosionGif = "/sprites/explosion.gif";
+  const healingGif = "/sprites/healing.webp";
 
-  // Dialog Messages (Separated by "|")
   const dialogLines = [
-    "Welcome to the Pokémon world! Take care of your digital pet.",
-    "Your choices will determine your pet's happiness!",
-    "Let's begin the adventure!"
+    `Welcome ${surveyData?.name || "Trainer"}! Take good care of your ${starter}.`,
+    "Your real-world choices influence your pet's health!",
+    "Let's begin your personalized adventure!"
   ];
 
-  // Health Bar Color Logic
   const getHealthColor = () => {
-    if (health > 50) return "green"; // ✅ Healthy
-    if (health > 20) return "yellow"; // ⚠️ Warning
-    return "red"; // ❌ Critical
+    if (health > 50) return "green";
+    if (health > 20) return "yellow";
+    return "red";
   };
 
-  // Format date and time
-  const formatDateTime = () => {
-    return currentTime.toLocaleString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false, // ✅ 24-hour format
-    });
-  };
+  const formatDateTime = () => currentTime.toLocaleString("en-US", {
+    weekday: "long", month: "short", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
 
-
-  // Handle damage and explosion effect
   const handleDamage = () => {
-    setShowExplosion(true); // ✅ Show explosion effect
-    setHealth((prev) => Math.max(0, prev - 20)); // ✅ Reduce health
-
-    setTimeout(() => {
-      setShowExplosion(false); // ✅ Hide explosion after 1 second
-    }, 1000);
+    setShowExplosion(true);
+    setHealth((prev) => Math.max(0, prev - 20));
+    setTimeout(() => setShowExplosion(false), 1000);
   };
 
-  // Handle healing and healing effect
   const handleHeal = () => {
-    setShowHealing(true); // ✅ Show healing effect
-    setHealth((prev) => Math.min(100, prev + 20)); // ✅ Increase health
-
-    setTimeout(() => {
-      setShowHealing(false); // ✅ Hide healing effect after 1 second
-    }, 1000);
+    setShowHealing(true);
+    setHealth((prev) => Math.min(100, prev + 20));
+    setTimeout(() => setShowHealing(false), 1000);
   };
 
-  // Update time every second
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer); // ✅ Cleanup on unmount
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Typing Effect
   useEffect(() => {
-    if (dialogVisible) {
-      let index = 0;
-      const currentText = dialogLines[currentDialogIndex] || "";
+    const data = localStorage.getItem("gameSurveyData");
+    if (data) {
+      setSurveyData(JSON.parse(data));
+    } else {
+      router.push("/begin"); // redirect if no survey data
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (dialogVisible && surveyData) {
+      const currentText = dialogLines[currentDialogIndex]
+        .replace("{name}", surveyData.name || "Trainer") // ✅ Insert survey name
+        .replace("{starter}", starter.toUpperCase()); // ✅ Insert starter Pokémon name
+  
       setDialogText(""); // ✅ Reset text before typing starts
       setIsTyping(true);
-
-      let timeouts = [];
-
+  
+      let typedText = ""; // ✅ Store text progressively
+      let timeouts = []; // ✅ Store timeouts properly
+  
       for (let i = 0; i < currentText.length; i++) {
         const timeout = setTimeout(() => {
-          setDialogText((prev) => prev + currentText.charAt(i));
-          if (i === currentText.length - 1) {
-            setIsTyping(false); // ✅ Typing complete
-          }
+          typedText += currentText.charAt(i);
+          setDialogText(typedText); // ✅ Updates only with correct text
+          if (i === currentText.length - 1) setIsTyping(false);
         }, 50 * i);
         timeouts.push(timeout);
       }
-
-      setTypingTimeouts(timeouts);
-
-      return () => {
-        timeouts.forEach(clearTimeout); // ✅ Clear previous timeouts on unmount
-      };
+  
+      setTypingTimeouts(timeouts); // ✅ Now it is defined
+  
+      return () => timeouts.forEach(clearTimeout);
     }
-  }, [dialogVisible, currentDialogIndex]);
+  }, [dialogVisible, currentDialogIndex, surveyData]);
 
   const handleNextDialog = () => {
     if (isTyping) {
-      // ✅ If typing, instantly complete the text
-      setTypingTimeouts((timeouts) => {
-        timeouts.forEach(clearTimeout);
-        return [];
-      });
-      setDialogText(dialogLines[currentDialogIndex]);
+      // ✅ Instantly complete the text if it's still typing
+      typingTimeouts.forEach(clearTimeout);
+      setDialogText(dialogLines[currentDialogIndex] // ✅ Show full text immediately
+        .replace("{name}", surveyData?.name || "Trainer")
+        .replace("{starter}", starter.toUpperCase()));
       setIsTyping(false);
-      return;
+      return; // ✅ Stop here, don't reset animation
     }
-
+  
+    // ✅ Move to next dialog message or close the box
     if (currentDialogIndex < dialogLines.length - 1) {
-      setCurrentDialogIndex((prev) => prev + 1);
+      setCurrentDialogIndex(prev => prev + 1);
       setDialogText(""); // Reset for next dialog
       setDialogVisible(true);
     } else {
@@ -128,103 +119,57 @@ export default function GamePage() {
     }
   };
 
-  return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      width: "100vw",
-      height: "100vh",
-      position: "relative"
-    }}>
-      {/* ✅ Date & Time Display (Top-Left Corner of Background) */}
+  if (!surveyData) {
+    return <p className="text-white text-center">Loading your game...</p>;
+  }
 
-      {/* Background Image */}
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white relative">
       <div style={{ position: "relative", width: "800px", height: "600px" }}>
         <div id="datetime-container">{formatDateTime()}</div>
         <Image src={selectedImage} alt="Background" layout="fill" objectFit="cover" />
 
-        {/* Centered Pokémon Sprite */}
-        <div style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)"
-        }}>
-          <Image src={spriteImage} alt="Sprite" width={100} height={100} />
-          
-          {/* Explosion Effect (Appears When Taking Damage) */}
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+          <Image src={spriteImage} alt={starter} width={100} height={100} />
           {showExplosion && (
-            <Image
-              src={explosionGif}
-              alt="Explosion Effect"
-              width={100}
-              height={100}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                animation: "shake 0.3s ease-in-out infinite"
-              }}
-            />
+            <Image src={explosionGif} alt="Explosion" width={100} height={100} style={{ position: "absolute", top: 0, left: 0 }} />
           )}
-
-          {/* Healing Effect (Appears When Healing) */}
           {showHealing && (
-            <Image
-              src={healingGif}
-              alt="Healing Effect"
-              width={100}
-              height={100}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                animation: "fade-in 0.5s ease-in-out"
-              }}
-            />
+            <Image src={healingGif} alt="Healing" width={100} height={100} style={{ position: "absolute", top: 0, left: 0 }} />
           )}
         </div>
 
-        {/* ✅ Health Bar (Below the Sprite) */}
         <div className="health-container">
           <div className="health-bar" style={{ width: `${health}%`, backgroundColor: getHealthColor() }}></div>
         </div>
 
-        {/* Pokémon-Style Dialog Box */}
         {dialogVisible && (
           <div id="dialogbox" onClick={handleNextDialog}>
             {dialogText}
-            <div id ="arrow"></div>
+            {!isTyping && <div id="arrow"></div>}
           </div>
         )}
       </div>
 
-      {/* Background Change Buttons */}
-      <div style={{ marginTop: "20px" }}>
-        <button onClick={() => setSelectedImage("/backgrounds/day-bg.jpg")} style={{ marginRight: "10px", padding: "10px 20px" }}>Day</button>
-        <button onClick={() => setSelectedImage("/backgrounds/night-bg.jpg")} style={{ marginRight: "10px", padding: "10px 20px" }}>Night</button>
-        <button onClick={() => setSelectedImage("/backgrounds/sunset-bg.jpg")} style={{ padding: "10px 20px" }}>Sunset</button>
+      <div className="mt-5 flex gap-2">
+        <button onClick={() => setSelectedImage("/backgrounds/day-bg.jpg")} className="px-4 py-2 bg-gray-700 rounded">Day</button>
+        <button onClick={() => setSelectedImage("/backgrounds/night-bg.jpg")} className="px-4 py-2 bg-gray-700 rounded">Night</button>
+        <button onClick={() => setSelectedImage("/backgrounds/sunset-bg.jpg")} className="px-4 py-2 bg-gray-700 rounded">Sunset</button>
       </div>
 
-      {/* Show Dialog Button */}
-      <button onClick={() => setDialogVisible(true)}
-        style={{ marginTop: "20px", padding: "10px 20px", background: "blue", color: "white", borderRadius: "5px" }}>
-        Show Dialog
-      </button>
+      <button onClick={() => setDialogVisible(true)} className="mt-3 px-4 py-2 bg-blue-600 rounded">Show Dialog</button>
+      <button onClick={handleDamage} className="mt-3 px-4 py-2 bg-red-600 rounded">Take Damage (-20)</button>
+      <button onClick={handleHeal} className="mt-3 px-4 py-2 bg-green-600 rounded">Heal (+20)</button>
 
-      {/* Damage Button (For Testing Health Reduction) */}
-      <button onClick={handleDamage} 
-        style={{ marginTop: "20px", padding: "10px 20px", background: "red", color: "white", borderRadius: "5px" }}>
-        Take Damage (-20)
-      </button>
-
-      {/* Heal Button (For Testing Health Increase) */}
-      <button onClick={handleHeal} 
-        style={{ marginTop: "20px", padding: "10px 20px", background: "green", color: "white", borderRadius: "5px" }}>
-        Heal (+20)
-      </button>
+      {/* Survey Data Display */}
+      <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 p-3 rounded text-sm">
+        <h3 className="font-bold">Your Baseline:</h3>
+        <p>Name: {surveyData.name}</p>
+        <p>Monthly Spend: ${surveyData.monthlySpending}</p>
+        <p>Ride-Hailing: {surveyData.rideHailingUsage}/week</p>
+        <p>Energy Usage: {surveyData.energyConsumption} kWh</p>
+        {surveyData.houseType && <p>House Type: {surveyData.houseType}</p>}
+      </div>
     </div>
   );
 }
